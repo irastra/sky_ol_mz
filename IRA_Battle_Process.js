@@ -74,7 +74,7 @@
         start_action.apply(this, arguments);
         $gameTimerManager.NewTimer(20, () => {
             const target = BattleManager.updateAction();
-            if (target.shouldPopupDamage()) {
+            if (target && target.shouldPopupDamage()) {
                 target.startDamagePopup();
             }
         });
