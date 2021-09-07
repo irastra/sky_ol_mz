@@ -1,28 +1,28 @@
 //=============================================================================
-// RPG Maker MZ - Sprite_BattleTimeline
+// RPG Maker MZ - Sprite_BattleTimelineEx
 //=============================================================================
 
 /*:
  * @target MZ
- * @plugindesc Sprite_BattleTimeline to dispaly battle timeline.
+ * @plugindesc Sprite_BattleTimelineEx to dispaly battle timeline.
  * @author irastra
  *
- * @help Sprite_BattleTimeline.js
+ * @help Sprite_BattleTimelineEx.js
  */
 
 (() => {
     //-----------------------------------------------------------------------------
-    // Sprite_BattleTimeline
+    // Sprite_BattleTimelineEx
     //
     // The sprite for displaying a character.
-    function Sprite_BattleTimeline() {
+    function Sprite_BattleTimelineEx() {
         this.initialize(...arguments);
     }
 
-    Sprite_BattleTimeline.prototype = Object.create(Sprite.prototype);
-    Sprite_BattleTimeline.prototype.constructor = Sprite_BattleTimeline;
+    Sprite_BattleTimelineEx.prototype = Object.create(Sprite.prototype);
+    Sprite_BattleTimelineEx.prototype.constructor = Sprite_BattleTimelineEx;
 
-    Sprite_BattleTimeline.prototype.initialize = function() {
+    Sprite_BattleTimelineEx.prototype.initialize = function() {
         Sprite.prototype.initialize.call(this);
         this.is_wait = false;
         this._actor_sprite_set = [];
@@ -39,11 +39,11 @@
         this.show();
     };
 
-    Sprite_BattleTimeline.prototype.setWait = function(is_wait){
+    Sprite_BattleTimelineEx.prototype.setWait = function(is_wait){
         this.is_wait = is_wait;
     }
 
-    Sprite_BattleTimeline.prototype.loadBitmap = function(sprite, name) {
+    Sprite_BattleTimelineEx.prototype.loadBitmap = function(sprite, name) {
         if ($gameSystem.isSideView()) {
             sprite.bitmap = ImageManager.loadSvEnemy(name);
         } else {
@@ -51,12 +51,12 @@
         }
     };
 
-    Sprite_BattleTimeline.prototype.resetItemSize = function(sprite){
+    Sprite_BattleTimelineEx.prototype.resetItemSize = function(sprite){
         sprite.scale.x = this._slider_spirte_size / sprite.width;
         sprite.scale.y = this._slider_spirte_size / sprite.height;
     }
 
-    Sprite_BattleTimeline.prototype.initMembers = function(){
+    Sprite_BattleTimelineEx.prototype.initMembers = function(){
         const enemies = $gameTroop.members();
         for (const enemy of enemies){
             let tmp_array = [];
@@ -99,7 +99,7 @@
         };
     }
 
-    Sprite_BattleTimeline.prototype.update = function(){
+    Sprite_BattleTimelineEx.prototype.update = function(){
         Sprite.prototype.update.call(this);
         if (this.is_wait){
             return;
@@ -107,7 +107,7 @@
         this.updateMembers();
     }
 
-    Sprite_BattleTimeline.prototype.updateMember = function(battler, battler_sprite_array){
+    Sprite_BattleTimelineEx.prototype.updateMember = function(battler, battler_sprite_array){
         let y = 0;
         if(battler.isEnemy()){
             y = this._slider_spirte_height;
@@ -129,6 +129,7 @@
         for(let i =0 ; i < this._time_wheel; i++){
             const battler_sprite = battler_sprite_array[i];
             next_x = next_x + full_x * i;
+            next_x = Math.ceil(next_x);
             if (next_x > this.bitmapWidth()){
                 battler_sprite.hide();
             }else{
@@ -136,14 +137,21 @@
             }
             battler_sprite.move(next_x, y);
         }
+        const battle_sprite = battler_sprite_array[this._time_wheel - 1];
+        if(battler._passTag){
+            battle_sprite.move(0, y);
+            battle_sprite.show();
+        }else{
+            battle_sprite.hide();
+        }
         
     }
 
-    Sprite_BattleTimeline.prototype.cmp = function(a, b){
+    Sprite_BattleTimelineEx.prototype.cmp = function(a, b){
         return b.position.x - a.position.x;
     }
 
-    Sprite_BattleTimeline.prototype.updateMembers = function(){
+    Sprite_BattleTimelineEx.prototype.updateMembers = function(){
         const enemies = $gameTroop.members();
         let idx = 0;
         for (const enemy of enemies){
@@ -161,35 +169,35 @@
         }
     }
 
-    Sprite_BattleTimeline.prototype.destroy = function(options) {
+    Sprite_BattleTimelineEx.prototype.destroy = function(options) {
         this.bitmap.destroy();
         Sprite.prototype.destroy.call(this, options);
     };
 
-    Sprite_BattleTimeline.prototype.createBitmap = function() {
+    Sprite_BattleTimelineEx.prototype.createBitmap = function() {
         const width = this.bitmapWidth();
         const height = this.bitmapHeight();
         this.bitmap = new Bitmap(width, height);
     };
 
-    Sprite_BattleTimeline.prototype.pos_x = function() {
+    Sprite_BattleTimelineEx.prototype.pos_x = function() {
         return 100 / 2;
     };
 
-    Sprite_BattleTimeline.prototype.pos_y = function() {
+    Sprite_BattleTimelineEx.prototype.pos_y = function() {
         return 30;
     };
 
 
-    Sprite_BattleTimeline.prototype.bitmapWidth = function() {
+    Sprite_BattleTimelineEx.prototype.bitmapWidth = function() {
         return Graphics.width - 100;
     };
 
-    Sprite_BattleTimeline.prototype.bitmapHeight = function() {
+    Sprite_BattleTimelineEx.prototype.bitmapHeight = function() {
         return 8;
     };
 
-    Sprite_BattleTimeline.prototype.drawSelf = function() {
+    Sprite_BattleTimelineEx.prototype.drawSelf = function() {
         color_bg = "#0000ff";
         color_begin = "#ff0000"
         color_end = "#bfeeee";
@@ -200,7 +208,7 @@
     };
 
     Spriteset_Battle.prototype.createTimeLine = function(){
-        this.sprite_timeline = new Sprite_BattleTimeline();
+        this.sprite_timeline = new Sprite_BattleTimelineEx();
         this._battleField.addChild(this.sprite_timeline);
     };
     
