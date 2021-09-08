@@ -31,7 +31,8 @@
         this._is_directly_mode = true;
         this._slider_spirte_size = 48;
         this._slider_spirte_height = this._slider_spirte_size / 2.0;
-        this._time_wheel = 5;
+        this._time_wheel = 7;
+        this._base_size = 10.0;
         this.initMembers();
         this.createBitmap();
         this.move(this.pos_x(), this.pos_y());
@@ -114,8 +115,8 @@
         }else{
             y = this._slider_spirte_height;
         }
-        const target_x =  (1.0 - battler.tpbChargeTime()) * 5.0 / battler.tpbAcceleration();
-        const full_x = (1.0 / battler.tpbAcceleration()) * 5.0;
+        const target_x =  (1.0 - battler.tpbChargeTime()) * this._base_size / battler.tpbAcceleration();
+        const full_x = (1.0 / battler.tpbAcceleration()) * this._base_size;
         let next_x = target_x;
         if (battler.isDead()){
             battler_sprite_array.forEach(battler_sprite => {
@@ -129,7 +130,7 @@
         for(let i =0 ; i < this._time_wheel; i++){
             const battler_sprite = battler_sprite_array[i];
             next_x = next_x + full_x * i;
-            next_x = Math.ceil(next_x);
+            next_x = next_x;
             if (next_x > this.bitmapWidth()){
                 battler_sprite.hide();
             }else{
@@ -138,7 +139,7 @@
             battler_sprite.move(next_x, y);
         }
         const battle_sprite = battler_sprite_array[this._time_wheel - 1];
-        if(battler._passTag){
+        if(battler._passTag && !battler.isDead()){
             battle_sprite.move(0, y);
             battle_sprite.show();
         }else{
