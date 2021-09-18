@@ -51,6 +51,16 @@ EventManager.PublishEvent = function(key, arg){
     }
 }
 
+GuidManager = function(){
+
+}
+
+GuidManager.guid = 1;
+
+GuidManager.NewGuid = function(){
+    return GuidManager.guid++;
+}
+
 // MyTimer
 function MyTimer() {
     this.initialize(...arguments);

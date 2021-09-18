@@ -22,8 +22,11 @@
     const pluginName = 'IRA_CompassMap';
     const parameters = PluginManager.parameters(pluginName);
     const bg_opacity = Number(parameters['opacity_value']);
-    const target_width = 300;
-    const target_height = 300;
+    const prefix_event = "!";
+    const target_width = 150;
+    const target_height = 150;
+    const sprite_title_width = 4;
+    const sprite_title_height = 4;
 
     ImageManager.loadCompassMap = function(filename) {
         return this.loadBitmap("img/maps/", filename);
@@ -56,6 +59,8 @@
     };
 
     function CompassMap (){
+        this.guid = GuidManager.NewGuid();
+        //alert("new guid: " + this.guid);
         this.initialize(...arguments);
     }
     CompassMap.prototype = Object.create(Sprite.prototype);
@@ -65,15 +70,19 @@
         Sprite.prototype.initialize.call(this);
         this._draw_sprite = new Sprite();
         this._tmp_pos = new Point();
+        this._size_x_scale = 1.0;
+        this._size_y_scale = 1.0;
         this.loadContentMap();
         this.move(0, 0);
         this.opacity = bg_opacity;
         this.addChild(this._draw_sprite);
         this.show();
-        this._size_x_scale = 1.0;
-        this._size_y_scale = 1.0;
-        this._is_init = false
     }
+
+    CompassMap.prototype.destroy = function(options) {
+        this._draw_sprite.destroy();
+        Window.prototype.destroy.call(this, options);
+    };
 
     CompassMap.prototype.loadContentMap = function(){
         let map_id = $gamePlayer.newMapId();
@@ -86,11 +95,6 @@
     }
 
     CompassMap.prototype.OnContentMapLoaded = function(){
-        if(this._is_init){
-            return;
-        }
-        this._is_init = true;
-        //alert("init~!");
         const ori_width = this.bitmap.width;
         const ori_height = this.bitmap.height;
         this.scale.x = this._size_x_scale = target_width * 1.0 / ori_width;
@@ -108,7 +112,6 @@
 
     CompassMap.prototype.drawRect = function(x, y, width, height, block) {
         const outlineColor = "#ff0000";
-        const mainColor = "#000000";
         this._draw_sprite.bitmap.fillRect(x, y, width, block, outlineColor);
         this._draw_sprite.bitmap.fillRect(x, y + height, width, block, outlineColor);
         this._draw_sprite.bitmap.fillRect(x, y, block, height, outlineColor);
@@ -119,6 +122,8 @@
     CompassMap.prototype.update = function(){
         Sprite.prototype.update.call(this);
         this._draw_sprite.bitmap.clear();
+        let player_pos_x=0;
+        let player_pos_y=0;
         if(SceneManager._scene._spriteset && SceneManager._scene._spriteset._characterSprites){
             for(const character_spirte of SceneManager._scene._spriteset._characterSprites){
                 if(character_spirte.isEmptyCharacter() || !character_spirte._characterName){
@@ -128,24 +133,38 @@
                 if(!character){
                     continue;
                 }
+                //alert(character._characterName);
+                if(character._characterName.indexOf(prefix_event) == 0){
+                    continue;
+                }
                 const x = $gameMap.canvasToMapPosX(character.screenX());
                 const y = $gameMap.canvasToMapPosY(character.screenY());
                 const pos = this.worldToLocalPos(x, y);
                 const color = character_spirte.checkCharacter($gamePlayer) ? "#ff0000" : "#00ff00" ; 
-                this._draw_sprite.bitmap.fillRect(pos.x, pos.y, 8 / this._size_x_scale, 8 / this._size_x_scale, color);
+                if(character_spirte.checkCharacter($gamePlayer)){
+                    player_pos_x = x;
+                    player_pos_y = y;
+                }
+                this._draw_sprite.bitmap.fillRect(pos.x, pos.y, sprite_title_width / this._size_x_scale, sprite_title_height / this._size_y_scale, color);
             }
         }
-        this.drawRect(0, 0, this._draw_sprite.width - 1 , this._draw_sprite.height - 1, 1)
+        this.DrawInfo(player_pos_x, player_pos_y);
+        this.drawRect(0, 0, this._draw_sprite.width - 2, this._draw_sprite.height - 2, 2);
+    }
+
+    CompassMap.prototype.DrawInfo = function(player_pos_x, player_pos_y){
+        const bitmap = this._draw_sprite.bitmap;
+        bitmap.fontFace = $gameSystem.mainFontFace();
+        bitmap.outlineColor = "black";
+        bitmap.outlineWidth = 8;
+        bitmap.fontSize = 72;
+        bitmap.drawText(Math.floor(player_pos_x) +" " + Math.floor(player_pos_y), 0, 0, 300, 100, "center");
     }
 
     const onMapLoaded = Scene_Map.prototype.onMapLoaded;
     Scene_Map.prototype.onMapLoaded = function(){
         onMapLoaded.apply(this, arguments);
-        if (this._compass_map){
-            return;
-        }
         this._compass_map = new CompassMap();
         this.addChild(this._compass_map);
     }
-
 })();

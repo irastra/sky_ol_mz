@@ -228,10 +228,10 @@
     function IraItem(obj){
         obj._item_level = 2;
         obj._color_list = [
-            "white", "blue", "green", "orange", "yellow"
+            "white", "blue", "green", "orange", "pink", "WhiteSmoke", "Snow", "yellow",
         ]
         obj._level_nick = [
-            "凡品", "良品", "极品", "仙品", "神品"
+            "凡品", "良品", "极品", "仙品", "神品", "开天", "先天", "造化"
         ]
         obj._effects = {}
         obj._item_level_max = obj._level_nick.length - 1;
@@ -246,7 +246,12 @@
         obj.convertEffect = convertEffect.bind(obj);
         obj.effectValid = effectValid.bind(obj);
         obj.getFreeSlot = getFreeSlot.bind(obj);
+        obj.isFullLevel = isFullLevel.bind(obj);
         obj.initEffect();
+    }
+
+    function isFullLevel(){
+        return this._item_level >= this._item_level_max;
     }
 
     function levelUp(){
@@ -433,7 +438,8 @@ Window_EquipOperation.prototype.initialize = function(){
 
 Window_EquipOperation.prototype.makeCommandList = function() {
     const is_weapon = DataManager.isWeapon(this.curItem());
-    this.addCommand("装备强化", "装备强化", is_weapon);
+    const item = this.curItem();
+    this.addCommand("装备强化", "装备强化", is_weapon && !item.isFullLevel());
     this.addCommand("属性吸附", "属性吸附", is_weapon);
     this.addCommand("属性镶嵌", "属性镶嵌", is_weapon);
 };
