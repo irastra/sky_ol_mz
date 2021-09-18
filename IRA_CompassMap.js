@@ -13,8 +13,6 @@
  * @text 背景透明度
  * @desc 背景透明度（0-255）
  * @type number
- * @on 同じ背景画
- * @off 別に設定
  * @default 128
  */
 
