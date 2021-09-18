@@ -22,6 +22,8 @@
     const pluginName = 'IRA_CompassMap';
     const parameters = PluginManager.parameters(pluginName);
     const bg_opacity = Number(parameters['opacity_value']);
+    const target_width = 300;
+    const target_height = 300;
 
     ImageManager.loadCompassMap = function(filename) {
         return this.loadBitmap("img/maps/", filename);
@@ -68,6 +70,9 @@
         this.opacity = bg_opacity;
         this.addChild(this._draw_sprite);
         this.show();
+        this._size_x_scale = 1.0;
+        this._size_y_scale = 1.0;
+        this._is_init = false
     }
 
     CompassMap.prototype.loadContentMap = function(){
@@ -81,8 +86,15 @@
     }
 
     CompassMap.prototype.OnContentMapLoaded = function(){
-        this.scale.x = 0.5;
-        this.scale.y = 0.5;
+        if(this._is_init){
+            return;
+        }
+        this._is_init = true;
+        //alert("init~!");
+        const ori_width = this.bitmap.width;
+        const ori_height = this.bitmap.height;
+        this.scale.x = this._size_x_scale = target_width * 1.0 / ori_width;
+        this.scale.y = this._size_y_scale = target_height * 1.0 / ori_height;
         this._draw_sprite.bitmap = new Bitmap(this.bitmap.width, this.bitmap.height);
     }
 
@@ -120,7 +132,7 @@
                 const y = $gameMap.canvasToMapPosY(character.screenY());
                 const pos = this.worldToLocalPos(x, y);
                 const color = character_spirte.checkCharacter($gamePlayer) ? "#ff0000" : "#00ff00" ; 
-                this._draw_sprite.bitmap.fillRect(pos.x, pos.y, 8, 8, color);
+                this._draw_sprite.bitmap.fillRect(pos.x, pos.y, 8 / this._size_x_scale, 8 / this._size_x_scale, color);
             }
         }
         this.drawRect(0, 0, this._draw_sprite.width - 1 , this._draw_sprite.height - 1, 1)
@@ -129,6 +141,9 @@
     const onMapLoaded = Scene_Map.prototype.onMapLoaded;
     Scene_Map.prototype.onMapLoaded = function(){
         onMapLoaded.apply(this, arguments);
+        if (this._compass_map){
+            return;
+        }
         this._compass_map = new CompassMap();
         this.addChild(this._compass_map);
     }
