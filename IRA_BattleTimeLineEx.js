@@ -48,6 +48,14 @@
         EventManager.RegistEvent("actor_init_tbp_charge_time", this.onBattlerTbpInitFinish.bind(this));
     };
 
+    Sprite_BattleTimelineEx.prototype.destroy = function(){
+        alert("TimeLine Destory!");
+        for(const sprite_battler of this._battler_sprite_set){
+            sprite_battler.battler = null;
+        }
+        Sprite.prototype.destroy.apply(this, arguments);
+    }
+
     Sprite_BattleTimelineEx.prototype.setWait = function(is_wait){
         this.is_wait = is_wait;
     }
@@ -72,6 +80,7 @@
             for (let i = 0;  i < this._time_wheel; i++){
                 let battler_sprite = new Sprite();
                 battler_sprite.anchor.x = 0.5;
+                battler_sprite._battler = enemy;
                 const name = enemy.battlerName();
                 this.loadBitmap(battler_sprite, name);
                 this.addChild(battler_sprite);
@@ -88,6 +97,7 @@
             let tmp_array = [];
             for (let i = 0; i < this._time_wheel; i++){
                 let battler_sprite = new Sprite();
+                battler_sprite._battler = actor;
                 battler_sprite.anchor.x = 0.5;
                 battler_sprite.bitmap = ImageManager.loadFace(actor.faceName());
                 let faceIndex = actor.faceIndex(); 
@@ -203,7 +213,12 @@
     }
 
     Sprite_BattleTimelineEx.prototype.cmp = function(a, b){
-        return a.position.x - b.position.x;
+        if (a.position.x != b.position.x){
+            return a.position.x - b.position.x;
+        }
+        a = a._battler;
+        b = b._battler;
+        return a.tpbChargeTime() - b.tpbChargeTime();
     }
 
     Sprite_BattleTimelineEx.prototype.updateMembers = function(){

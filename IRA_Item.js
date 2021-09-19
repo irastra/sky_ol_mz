@@ -21,6 +21,26 @@
         }
     };
 
+    Game_Party.prototype.gainItem = function(item, amount, includeEquip) {
+        const container = this.itemContainer(item);
+        if (container) {
+            const new_item = Object.assign(item);
+            IraItem(item);
+            //alert(new_item.guid);
+            const lastNumber = this.numItems(new_item);
+            const newNumber = lastNumber + amount;
+            const item_guid = new_item.id;
+            container[item_guid] = newNumber.clamp(0, this.maxItems(new_item));
+            if (container[item_guid] === 0) {
+                delete container[item_guid];
+            }
+            if (includeEquip && newNumber < 0) {
+                this.discardMembersEquip(new_item, -newNumber);
+            }
+            $gameMap.requestRefresh();
+        }
+    };
+
     BattleManager.processTurn = function() {
         const subject = this._subject;
         const action = subject.currentAction();
@@ -216,15 +236,25 @@
     }
 
     function IraItem(obj){
-        obj._item_level = 2;
+        BindObj(obj);
+        obj.initEffect();
+        if(obj.ira_init){
+            return;
+        }
+        obj._item_level = 0;
         obj._color_list = [
             "white", "blue", "green", "orange", "pink", "WhiteSmoke", "Snow", "yellow",
         ]
         obj._level_nick = [
             "凡品", "良品", "极品", "仙品", "神品", "开天", "先天", "造化"
         ]
+        obj.guid = obj.id;
+        obj.ira_init = true;
         obj._effects = {}
         obj._item_level_max = obj._level_nick.length - 1;
+    }
+
+    function BindObj(obj){
         obj.IraItemDebug = IraItemDebug.bind(obj);
         obj.getLevelColor = getLevelColor.bind(obj);
         obj.getLevelText = getLevelText.bind(obj);
@@ -237,7 +267,7 @@
         obj.effectValid = effectValid.bind(obj);
         obj.getFreeSlot = getFreeSlot.bind(obj);
         obj.isFullLevel = isFullLevel.bind(obj);
-        obj.initEffect();
+        obj.OnEffectCanged = OnEffectCanged.bind(obj);
     }
 
     function isFullLevel(){
@@ -248,6 +278,13 @@
         this._item_level += 1;
         this._item_level = Math.min(this._item_level, this._item_level_max);
         this.initEffect();
+        this.OnEffectCanged();
+    }
+
+    function OnEffectCanged(){
+        $gameParty.gainItem(this, -1, false);
+        this.guid = GuidManager.NewGuid();
+        $gameParty.gainItem(this, 1, false);
     }
 
     function getLevelColor(){
@@ -287,10 +324,13 @@
             target_item._effects[target_effect_idx] = this._effects[effect_idx];
             const effect_type = EquipEffect.EFFECT_NONE;
             const effect_range = EquipEffect.EFFECT_RANAGE[effect_type];
-            this._effects[effect_idx] = [effect_type, effect_range[1]]
+            this._effects[effect_idx] = [effect_type, effect_range[1]];
+            this.OnEffectCanged();
+            target_item.OnEffectCanged();
         }
-
     }
+
+
 
     function getFreeSlot(){
         for(let idx = 0 ; idx < this._item_level; idx++){
@@ -331,6 +371,8 @@
             init_func = IraItem;
         }else if(["$dataActors"].includes(name)){
             init_func = IraActor;
+        }else{
+            //alert(name);
         }
         if (init_func && data && data.forEach){
             data.forEach(element => {
@@ -339,7 +381,6 @@
                 }
             });
         }
-
     }
 })();
 
