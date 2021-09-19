@@ -114,6 +114,44 @@ Timer_Manager.prototype.update_timer = function(s_i){
 };
 
 (() => {
+
+    function IraDebugWindow(){
+        this.guid = GuidManager.NewGuid();
+        this.initialize(...arguments);
+    }
+    IraDebugWindow.prototype = Object.create(Window_Base.prototype);
+    IraDebugWindow.prototype.constructor = IraDebugWindow;    
+    IraDebugWindow.prototype.initialize = function(){
+        Window_Base.prototype.initialize.call(this, arguments);
+        IraDebugWindow.instance = this;
+        this.is_add = false;
+    }
+    
+    IraDebugWindow.Debug = function(info){
+        const instance = IraDebugWindow.instance;
+        if(instance){
+            if(!instance.is_add){
+                const cur_scene = SceneManager._scene;
+                cur_scene.addChild(instance);
+                instance.is_add = true;
+                instance.show();
+            }
+            instance.contents.clear();
+            instance.drawText(info, 0, 0, 300, 300, "center");
+        }
+    }
+    
+    IraDebugWindow.prototype.update = function(){
+        Window_Base.prototype.update.apply(this, arguments);
+    }
+    
+    IraDebugWindow.prototype.destroy = function(){
+        IraDebugWindow.instance = null;
+        Window_Base.prototype.initialize.apply(this, arguments);
+    }
+
+    //IraDebugWindow.instance = new IraDebugWindow(new Rectangle(300, 300, 300, 100));
+
     $gameTimerManager = new Timer_Manager();
     const scene_battle_update = Scene_Battle.prototype.update;
     Scene_Battle.prototype.update = function(){
@@ -123,21 +161,61 @@ Timer_Manager.prototype.update_timer = function(s_i){
     }
     
     BattleManager.isBusy = function() {
-        return (
-            $gameMessage.isBusy() ||
-            this._logWindow.isBusy()
-        );
+        return ($gameMessage.isBusy() || this._logWindow.isBusy());
+    };
+
+    const update_func = BattleManager.update;
+    BattleManager.update = function(){
+        update_func.apply(this, arguments);
+    }
+
+
+    Game_Action.prototype.repeatTargets = function(targets) {
+        const repeatedTargets = [];
+        const repeats = this.numRepeats();
+        for (let i = 0; i < repeats; i++) {
+            for (const target of targets) {
+                if (target) {
+                    repeatedTargets.push(target);
+                }
+            }
+        }
+        return repeatedTargets;
+    };
+
+    const start_action = BattleManager.startAction;
+    BattleManager.startAction = function() {
+        start_action.apply(this, arguments);
+        this._base_target_num = this._targets.length / this._action.numRepeats();
     };
 
     BattleManager.updateAction = function() {
-        if (this._targets) {
-            for(const target of this._targets){
-                this.invokeAction(this._subject, target);
+        if (this._targets && this._base_target_num) {
+            for(let i = 0; i < this._base_target_num; i++){
+                const target = this._targets.shift();
+                if (target) {
+                    this.invokeAction(this._subject, target);
+                }else{
+                    this.endAction();
+                    break;
+                }
             }
-            this._targets = null;
         } else {
             this.endAction();
         }
+    };
+
+    Window_BattleLog.prototype.messageSpeed = function(){
+        return 16;
+    }
+
+    Window_BattleLog.prototype.update = function() {
+        this.updateWait();
+        this.callNextMethod();
+    };
+
+    Window_BattleLog.prototype.maxLines = function() {
+        return 20;
     };
 
 })();
