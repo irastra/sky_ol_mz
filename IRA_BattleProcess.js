@@ -129,5 +129,15 @@ Timer_Manager.prototype.update_timer = function(s_i){
         );
     };
 
+    BattleManager.updateAction = function() {
+        if (this._targets) {
+            for(const target of this._targets){
+                this.invokeAction(this._subject, target);
+            }
+            this._targets = null;
+        } else {
+            this.endAction();
+        }
+    };
 
 })();

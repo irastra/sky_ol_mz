@@ -53,16 +53,6 @@
         }
     };
 
-    BattleManager.updateAction = function() {
-        const target = this._targets.shift();
-        if (target) {
-            this.invokeAction(this._subject, target);
-        } else {
-            this.endAction();
-        }
-        return target;
-    };
-
     const createItemWindow = Scene_Item.prototype.createItemWindow;
     Scene_Item.prototype.createItemWindow = function(){
         createItemWindow.apply(this, arguments);
