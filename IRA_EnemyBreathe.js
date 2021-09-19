@@ -4,7 +4,7 @@
 
 /*:
  * @target MZ
- * @plugindesc Sprite_EnemyBreathe to dispaly battle timeline.
+ * @plugindesc 呼吸插件
  * @author irastra
  *
  * @arg breathFrame
@@ -15,16 +15,11 @@
  * @text Breath Number
  * @desc Control number of the Breath.
  * 
- * @help Sprite_EnemyBreathe.js
+ * @help 敌人呼吸（参照 飞天大胖喵）
  */
 
 (() => {
     const pluginName = "EnemyBreathe";
-
-    PluginManager.registerCommand(pluginName, "set", args => {
-        //const pictureId = Number(args.pictureId);
-        //const commonEventId = Number(args.commonEventId);
-    });
 
     //-----------------------------------------------------------------------------
     // Sprite_EnemyBreathe

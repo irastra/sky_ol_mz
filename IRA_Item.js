@@ -4,10 +4,10 @@
 
 /*:
  * @target MZ
- * @plugindesc Ira_Item to dispaly battle timeline.
+ * @plugindesc 装备，强化，属性插件
  * @author irastra
  *
- * @help Ira_Item.js
+ * @help 添加装备品级，属性，强化，镶嵌（目前还在完善中）
  */
 
 (() => {

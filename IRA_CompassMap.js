@@ -4,10 +4,10 @@
 
 /*:
  * @target MZ
- * @plugindesc IRA_CompassMap to dispaly small map.
+ * @plugindesc 小地图
  * @author irastra
  *
- * @help IRA_CompassMap.js
+ * @help 左上角小地图
  * 
  * @param opacity_value
  * @text 背景透明度

@@ -4,10 +4,10 @@
 
 /*:
  * @target MZ
- * @plugindesc IRA_Battle_Process to dispaly battle timeline.
+ * @plugindesc 战斗伤害即时触发
  * @author irastra
  *
- * @help IRA_Battle_Process.js
+ * @help 战斗调整。
  */
 
 function EventManager(){

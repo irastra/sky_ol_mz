@@ -4,10 +4,10 @@
 
 /*:
  * @target MZ
- * @plugindesc Sprite_BattleTimelineEx to dispaly battle timeline.
+ * @plugindesc 真实速度行动条
  * @author irastra
  *
- * @help Sprite_BattleTimelineEx.js
+ * @help 真实感行动条
  */
 
 (() => {
