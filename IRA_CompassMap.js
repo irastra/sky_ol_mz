@@ -58,7 +58,6 @@
 
     function CompassMap (){
         this.guid = GuidManager.NewGuid();
-        //alert("new guid: " + this.guid);
         this.initialize(...arguments);
     }
     CompassMap.prototype = Object.create(Sprite.prototype);
@@ -131,7 +130,6 @@
                 if(!character){
                     continue;
                 }
-                //alert(character._characterName);
                 if(character._characterName.indexOf(prefix_event) == 0){
                     continue;
                 }

@@ -10,34 +10,171 @@
  * @help 添加装备品级，属性，强化，镶嵌（目前还在完善中）
  */
 
+IRA_ITEM_TYPE = function(){
+}
+
+IRA_ITEM_TYPE.ITEM = 0;
+IRA_ITEM_TYPE.WEAPON = 1;
+IRA_ITEM_TYPE.ARMOR = 2;
+
 (() => {
 
     DataManager.onXhrLoad = function(xhr, name, src, url) {
         if (xhr.status < 400) {
             window[name] = JSON.parse(xhr.responseText);
+            /*
+            if(name == "$dataArmors"){
+                alert("on load:" + name + " " + $dataArmors);
+            }
+            */
             this.onLoad(name, window[name]);
         } else {
+            //alert("error! " + name);
             this.onXhrError(name, src, url);
         }
     };
 
-    Game_Party.prototype.gainItem = function(item, amount, includeEquip) {
+    const is_weapon = DataManager.isWeapon;
+    const is_item = DataManager.isItem;
+    const is_skill = DataManager.isSkill;
+    const is_armor = DataManager.isArmor;
+
+    DataManager.isWeapon = function(item){
+        return ($dataWeapons && is_weapon(item)) || (item && item.item_type == IRA_ITEM_TYPE.WEAPON);
+    }
+    
+    DataManager.isItem = function(item){
+        return ($dataItems && is_item(item)) || (item && item.item_type == IRA_ITEM_TYPE.ITEM);
+    }
+
+    DataManager.isSkill = function(item){
+        return ($dataSkills && is_skill(item)) || (item && item.item_type == IRA_ITEM_TYPE.SKILL);
+    }
+    
+    DataManager.isArmor = function(item){
+        return ($dataArmors && is_armor(item)) || (item && item.item_type == IRA_ITEM_TYPE.ARMOR);
+    }
+
+    DataManager.isIraItem = function(item){
+        return DataManager.isWeapon(item) || DataManager.isArmor(item);
+    }
+
+    Game_Party.prototype.extrace_ira_item = function(dict_obj){
+        ret = [];
+        let template_set = []
+        const pair_list = Object.keys(dict_obj);
+        for(const key of pair_list){
+            const pair = dict_obj[key];
+            for(const item of pair){
+                if(item.IsTemplateItem()){
+                    if(template_set.includes(item.id)){
+                        continue;
+                    }else{
+                        template_set.push(item.id);
+                    }
+                }
+                ret.push(item);
+            }
+        }
+        return ret;
+    }
+
+    Game_Party.prototype.items = function() {
+        //alert('test');
+        return this.extrace_ira_item(this._items);
+    };
+    
+    Game_Party.prototype.weapons = function() {
+        return this.extrace_ira_item(this._weapons);
+    };
+    
+    Game_Party.prototype.armors = function() {
+        return this.extrace_ira_item(this._armors);
+    };
+
+    Game_Party.prototype.numItems = function(item) {
+        const container = this.itemContainer(item);
+        return container && container[item.guid] ? container[item.guid].length : 0; 
+    };
+
+    Game_Party.prototype.gainItem = function(item, amount, includeEquip, is_recycle) {
         const container = this.itemContainer(item);
         if (container) {
-            const new_item = Object.assign(item);
-            IraItem(item);
-            //alert(new_item.guid);
-            const lastNumber = this.numItems(new_item);
-            const newNumber = lastNumber + amount;
-            const item_guid = new_item.id;
-            container[item_guid] = newNumber.clamp(0, this.maxItems(new_item));
-            if (container[item_guid] === 0) {
-                delete container[item_guid];
-            }
-            if (includeEquip && newNumber < 0) {
-                this.discardMembersEquip(new_item, -newNumber);
+            if (amount > 0){
+                let new_item = item;
+                if (!is_recycle){
+                    new_item = IraItem.NewIraItem(item);
+                }       
+                const item_guid = new_item.guid;
+                if(!container[item_guid]){
+                    container[item_guid] = [];
+                }
+                container[item_guid].push(new_item);     
+                this.cur_test_item = new_item;           
+            }else if(amount < 0){
+                let item_guid = item.guid;
+                if (container[item_guid]) {
+                    let item_list = container[item_guid];
+                    //alert(item_list.length + " " + item_list.includes(item));
+                    if(item_list.includes(item)){
+                        const find_idx = item_list.indexOf(item);
+                        item_list.splice(find_idx, 1);
+                    }else{
+                        item_list.shift();
+                    }
+                    if(container[item_guid].length == 0){
+                        delete container[item_guid];
+                    }
+                }
+                const lastNumber = this.numItems(item);
+                const newNumber = lastNumber + amount;
+                if (includeEquip && newNumber < 0) {
+                    this.discardMembersEquip(item, -newNumber);
+                }
             }
             $gameMap.requestRefresh();
+        }
+    };
+
+    Game_Item.prototype.initialize = function(item) {
+        this._dataClass = "";
+        this._itemId = 0;
+        this._item = null;
+        if (item) {
+            this.setObject(item);
+        }
+    };
+
+    Game_Item.prototype.object = function() {
+        
+        if(this._item){
+            return this._item;
+        }
+        return null;
+    };
+
+    Game_Item.prototype.setObject = function(item) {
+        if (DataManager.isSkill(item)) {
+            this._dataClass = "skill";
+        } else if (DataManager.isItem(item)) {
+            this._dataClass = "item";
+        } else if (DataManager.isWeapon(item)) {
+            this._dataClass = "weapon";
+        } else if (DataManager.isArmor(item)) {
+            this._dataClass = "armor";
+        } else {
+            this._dataClass = "";
+        }
+        this._itemId = item ? item.id : 0;
+        this._item = item;
+    };
+
+    Game_Item.prototype.setEquip = function(isWeapon, itemId) {
+        this._dataClass = isWeapon ? "weapon" : "armor";
+        this._itemId = itemId;
+        const item = isWeapon ? $dataWeapons[itemId] : $dataArmors[itemId];
+        if(item){
+            this.setObject(IraItem.NewIraItem(item));
         }
     };
 
@@ -89,9 +226,8 @@
     };
 
     Scene_Item.prototype.onItemOk = function() {
-        $gameParty.setLastItem(this.item());
-        //alert(this.item().name + " " + $gameParty.lastItem().name);
-        if (!DataManager.isWeapon(this.item())){
+        $gameParty.setLastItem(this.item());         
+        if (!DataManager.isIraItem(this.item())){
             this.determineItem();
         }else{
             this._equipOperationWindow.refresh();
@@ -101,7 +237,7 @@
     };
 
     Window_ItemList.prototype.isEnabled = function(item) {
-        return $gameParty.canUse(item) || DataManager.isWeapon(item);
+        return $gameParty.canUse(item) || DataManager.isIraItem(item);
     };
     
     //-----------------------------------------------------------------------------
@@ -112,7 +248,7 @@
             const iconY = y + (this.lineHeight() - ImageManager.iconHeight) / 2;
             const textMargin = ImageManager.iconWidth + 4;
             const itemWidth = Math.max(0, width - textMargin);
-            if(!DataManager.isWeapon(item) && item.note != "吸附石"){
+            if(!DataManager.isIraItem(item) && item.note != "吸附石"){
                 this.resetTextColor();
                 this.drawIcon(item.iconIndex, x, iconY);
                 this.drawText(item.name, x + textMargin, y, itemWidth);
@@ -143,14 +279,19 @@
     const item_initialize_func = Window_ItemList.prototype.initialize;
     Window_ItemList.prototype.initialize = function(){
         item_initialize_func.apply(this, arguments);
-        this.func = this.refresh.bind(this);
-        EventManager.RegistEvent('item_update', this.func);
+        EventManager.RegistEvent('item_update', this.OnIraItemUpdate.bind(this));
+    }
+
+    Window_ItemList.prototype.OnIraItemUpdate = function (item){
+        this.refresh();
+        const new_idx = this._data.indexOf(item);
+        this.select(new_idx);
+        $gameParty.setLastItem(this.item());
     }
 
     Window_ItemList.prototype.OnDestroy = function(){
-        //alert("itemlist destroy");
         Window_Command.prototype.OnDestroy.call(this);
-        EventManager.UnregistEvent('item_update', this.func);
+        EventManager.UnregistEvent('item_update', this.OnIraItemUpdate);
     }
     
     const help_initialize_func = Window_Help.prototype.initialize;
@@ -181,7 +322,7 @@
     };
     
     Window_Help.prototype.setItem = function(item) {
-        if(!DataManager.isWeapon(item) && (item && item.note != "吸附石")){
+        if(!DataManager.isIraItem(item) && (item && item.note != "吸附石")){
             this.setText(item ? item.description : "");
         }else{
             this.setText(item ? item.getDesc() : "");
@@ -212,15 +353,15 @@
         this.EFFECT_MAX = 8;
         this.EFFECT_RANAGE = {};
         this.VALUE_DESC = {};
-        this.AddProperty(this.EFFECT_NONE, [0, null], "可镶嵌");
-        this.AddProperty(this.EFFECT_CRITICAL, [0, 50], "暴击率");
-        this.AddProperty(this.EFFECT_PHICIAL_VALUE, [0, 50], "物理攻击");
-        this.AddProperty(this.EFFECT_PHISIAL_PCT, [0, 50], "物攻强度");
-        this.AddProperty(this.EFFECT_HP_VALUE, [0, 50], "生命");
-        this.AddProperty(this.EFFECT_HP_PCT, [0, 50], "生命力");
-        this.AddProperty(this.EFFFCT_MAGIC_VALUE, [0, 50], "法术攻击");
-        this.AddProperty(this.EFFECT_MAGIC_PCT, [0, 50], "法术强度");
-        this.AddProperty(this.EFFECT_MUTIPIPLY, [0, 30], "连击率");
+        this.AddProperty(this.EFFECT_NONE, [0, null, null], "可镶嵌");
+        this.AddProperty(this.EFFECT_CRITICAL, [0, 50, 30], "暴击率");
+        this.AddProperty(this.EFFECT_PHICIAL_VALUE, [0, 50, 30], "物理攻击");
+        this.AddProperty(this.EFFECT_PHISIAL_PCT, [0, 50, 30], "物攻强度");
+        this.AddProperty(this.EFFECT_HP_VALUE, [0, 50, 30], "生命");
+        this.AddProperty(this.EFFECT_HP_PCT, [0, 50, 30], "生命力");
+        this.AddProperty(this.EFFFCT_MAGIC_VALUE, [0, 50, 30], "法术攻击");
+        this.AddProperty(this.EFFECT_MAGIC_PCT, [0, 50, 30], "法术强度");
+        this.AddProperty(this.EFFECT_MUTIPIPLY, [0, 30, 30], "连击率");
     }
 
     EquipEffect.setUp();
@@ -235,9 +376,13 @@
         this._grade_point += this._grade_point_add;
     }
 
-    function IraItem(obj){
+    function IraItem(obj, template_obj){
+        IraItem.type_func = [
+            DataManager.isItem,
+            DataManager.isWeapon,
+            DataManager.isArmor
+        ];
         BindObj(obj);
-        obj.initEffect();
         if(obj.ira_init){
             return;
         }
@@ -248,14 +393,42 @@
         obj._level_nick = [
             "凡品", "良品", "极品", "仙品", "神品", "开天", "先天", "造化"
         ]
+        obj._effects = {}
         obj.guid = obj.id;
         obj.ira_init = true;
-        obj._effects = {}
+        obj.ira_new = false;
         obj._item_level_max = obj._level_nick.length - 1;
+        obj.initEffect();
+        IraItem.initItemType(obj, template_obj);
+    }
+
+    isIraNewItem = function (){
+        return  
+    }
+
+    IraItem.NewIraItem = function NewIraItem(item){
+        if(!item.IsTemplateItem()){
+            return item;
+        }
+        const new_item = Object.assign({}, item);
+        IraItem(new_item, item);
+        new_item._effects = {};
+        new_item.ira_new = true;
+        return new_item;
+    }
+
+    IraItem.initItemType = function(obj, template_obj){
+        obj.item_type = -1;
+        for(let idx = 0; idx < this.type_func.length; idx++){
+            const check_func = this.type_func[idx];
+            if(check_func(template_obj)){
+                obj.item_type = idx;
+                return;
+            }
+        }
     }
 
     function BindObj(obj){
-        obj.IraItemDebug = IraItemDebug.bind(obj);
         obj.getLevelColor = getLevelColor.bind(obj);
         obj.getLevelText = getLevelText.bind(obj);
         obj.getLevelName = getLevelName.bind(obj);
@@ -267,7 +440,31 @@
         obj.effectValid = effectValid.bind(obj);
         obj.getFreeSlot = getFreeSlot.bind(obj);
         obj.isFullLevel = isFullLevel.bind(obj);
-        obj.OnEffectCanged = OnEffectCanged.bind(obj);
+        obj.ItemChange = ItemChange.bind(obj);
+        obj.IsTemplateItem = IsTemplateItem.bind(obj);
+        obj.canMergeToTemplate = canMergeToTemplate.bind(obj);
+    }
+
+    function canMergeToTemplate(){
+        return this._item_level == 0 && (Object.keys(this._effects).length == 0);
+    }
+
+    function IsTemplateItem(){
+        return this.guid == this.id; //!this.ira_new; 
+    }
+
+    function ItemChange(){
+        if(this.IsTemplateItem()){
+            $gameParty.gainItem(this, -1, false);
+            this.guid = GuidManager.NewGuid();
+            $gameParty.gainItem(this, 1, false);
+        }else{
+            if(this.canMergeToTemplate()){
+                $gameParty.gainItem(this, -1, false);
+                this.guid = this.id;
+                $gameParty.gainItem(this, 1, false, true);
+            }
+        }
     }
 
     function isFullLevel(){
@@ -278,13 +475,7 @@
         this._item_level += 1;
         this._item_level = Math.min(this._item_level, this._item_level_max);
         this.initEffect();
-        this.OnEffectCanged();
-    }
-
-    function OnEffectCanged(){
-        $gameParty.gainItem(this, -1, false);
-        this.guid = GuidManager.NewGuid();
-        $gameParty.gainItem(this, 1, false);
+        this.ItemChange();
     }
 
     function getLevelColor(){
@@ -325,12 +516,10 @@
             const effect_type = EquipEffect.EFFECT_NONE;
             const effect_range = EquipEffect.EFFECT_RANAGE[effect_type];
             this._effects[effect_idx] = [effect_type, effect_range[1]];
-            this.OnEffectCanged();
-            target_item.OnEffectCanged();
+            this.ItemChange();
+            target_item.ItemChange();
         }
     }
-
-
 
     function getFreeSlot(){
         for(let idx = 0 ; idx < this._item_level; idx++){
@@ -341,15 +530,15 @@
         return null;
     }
 
-
     function getDesc(){
         const desc_list = Object.values(this._effects);
         let desc = "";
         for(effect of desc_list){
+            const effect_range = EquipEffect.EFFECT_RANAGE[effect[0]];
             if(effect[0] == EquipEffect.EFFECT_NONE){
                 desc += EquipEffect.VALUE_DESC[effect[0]] + '\n';
             }else{
-                desc += EquipEffect.VALUE_DESC[effect[0]] + " +" + effect[1] + '\n';
+                desc += EquipEffect.VALUE_DESC[effect[0]] + " +" + effect[1] + " | 最大" + effect_range[2] +'\n';
             }
         }
         return this.description + '\n' + desc;
@@ -359,29 +548,75 @@
         return EquipEffect.VALUE_DESC[effect[0]] + " +" + effect[1];
     }
 
-    function IraItemDebug(){
-        alert("debug" + this._item_level);
-    }
-
     const onLoad = DataManager.onLoad;
     DataManager.onLoad = function(name, data){
         onLoad.call(this, name, data);
         let init_func = null;
-        if (["$dataItems", "$dataSkills", "$dataWeapons"].includes(name)){
+        if (["$dataItems", "$dataWeapons", "$dataArmors"].includes(name)){
             init_func = IraItem;
         }else if(["$dataActors"].includes(name)){
             init_func = IraActor;
-        }else{
-            //alert(name);
         }
         if (init_func && data && data.forEach){
             data.forEach(element => {
-                if (element){
-                    init_func(element);
+                if (element && init_func){
+                    if (init_func === IraItem){
+                        init_func(element, element);
+                    }else{
+                        init_func(element);
+                    }
                 }
             });
         }
     }
+
+    DataManager.extractSaveContents = function(contents) {
+        $gameSystem = contents.system;
+        $gameScreen = contents.screen;
+        $gameTimer = contents.timer;
+        $gameSwitches = contents.switches;
+        $gameVariables = contents.variables;
+        $gameSelfSwitches = contents.selfSwitches;
+        $gameActors = contents.actors;
+        $gameParty = contents.party;
+        $gameMap = contents.map;
+        $gamePlayer = contents.player;
+        // game party items;
+        let info_list = [
+            $gameParty._items,
+            $gameParty._weapons,
+            $gameParty._armors,
+        ];
+        for(let info_dict of info_list){
+            for(const k of Object.keys(info_dict)){
+                let items = info_dict[k];
+                for(let item of items){
+                    IraItem(item, item);
+                }    
+            }
+        }
+        
+        const actor_keys = Object.keys($gameActors._data);
+        for(const k of actor_keys){
+            let game_actor = $gameActors._data[k];
+            if(!game_actor){
+                continue;
+            }
+            for(let equip_item of game_actor._equips){
+                if(!equip_item){
+                    continue;
+                }
+                let item = equip_item.object();
+                if(item){
+                    IraItem(item, item);
+                }
+            }
+        }
+        
+        $gameParty.setLastItem(null);
+
+    };
+
 })();
 
 function Window_EquipEffect(){
@@ -468,7 +703,10 @@ Window_EquipOperation.prototype.initialize = function(){
 }
 
 Window_EquipOperation.prototype.makeCommandList = function() {
-    const is_weapon = DataManager.isWeapon(this.curItem());
+    if(!this.curItem()){
+        return;
+    }
+    const is_weapon = DataManager.isIraItem(this.curItem());
     const item = this.curItem();
     this.addCommand("装备强化", "装备强化", is_weapon && !item.isFullLevel());
     this.addCommand("属性吸附", "属性吸附", is_weapon);
@@ -477,7 +715,7 @@ Window_EquipOperation.prototype.makeCommandList = function() {
 
 Window_EquipOperation.prototype.selectItem = function(begin_idx) {
     if(begin_idx != null){
-        let check_func = DataManager.isWeapon;
+        let check_func = DataManager.isIraItem;
         if(this.opt_type == 3){
             check_func = this.effectStone;
         }else if(this.opt_type == 2){
@@ -497,7 +735,6 @@ Window_EquipOperation.prototype.effectStone = function(item){
 }
 
 Window_EquipOperation.prototype.effectStoneEmpty = function(item){
-    //alert(item._effects[0][0]);
     return item.note == "吸附石" && !item.effectValid(0);
 }
 
@@ -542,8 +779,10 @@ Window_EquipOperation.prototype.addEffect = function(idx){
 Window_EquipOperation.prototype.processFinish = function(){
     this.activate();
     const item = $gameParty.lastItem();
+    //alert("process_find:" + (item === $gameParty.cur_test_item));
     item.levelUp();
     EventManager.PublishEvent('item_update', item);
+
 }
 
 function Window_RandomProcess(){

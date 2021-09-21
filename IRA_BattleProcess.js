@@ -21,7 +21,6 @@ EventManager.RegistEvent = function(key, cb, cb_argument){
         EventManager.event_dict[key] = []
     }
     EventManager.event_dict[key].push([cb, cb_argument]);
-    //alert(EventManager.event_dict[key].length);
 }
 
 EventManager.UnregistEvent = function(key, cb){
@@ -31,7 +30,6 @@ EventManager.UnregistEvent = function(key, cb){
     }
     const idx = event_list.indexOf(cb);
     event_list.splice(idx, 1);
-    //alert(event_list);
     if(!event_list.length){
         delete EventManager.event_dict[key];
     }
@@ -39,7 +37,6 @@ EventManager.UnregistEvent = function(key, cb){
 
 EventManager.PublishEvent = function(key, arg){
     const event_list = EventManager.event_dict[key];
-    //alert(event_list.length);
     if(event_list){
         for (const cb_pair of event_list){
             if(cb_pair[1]){
@@ -55,7 +52,7 @@ GuidManager = function(){
 
 }
 
-GuidManager.guid = 1;
+GuidManager.guid = 100000;
 
 GuidManager.NewGuid = function(){
     return GuidManager.guid++;
@@ -92,7 +89,6 @@ function Timer_Manager(){
 Timer_Manager.prototype.constructor = Timer_Manager;
 
 Timer_Manager.prototype.initialize = function (){
-    //alert("init timer manager!");
     this._timer_list = [];
 }
 

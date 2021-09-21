@@ -49,7 +49,6 @@
     };
 
     Sprite_BattleTimelineEx.prototype.destroy = function(){
-        alert("TimeLine Destory!");
         for(const sprite_battler of this._battler_sprite_set){
             sprite_battler.battler = null;
         }
