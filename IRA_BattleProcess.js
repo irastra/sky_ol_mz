@@ -1,5 +1,5 @@
 //=============================================================================
-// RPG Maker MZ - IRA_Battle_Process.js
+// RPG Maker MZ - IRA_BattleProcess.js
 //=============================================================================
 
 /*:
@@ -8,9 +8,15 @@
  * @author irastra
  *
  * @help 战斗调整。
+ * 
+ * @param use_atk_access
+ * @desc 攻击前像目标移动。
+ * @type boolean
+ * @default false
  */
 
 function EventManager(){
+
 }
 
 EventManager.event_dict = {}
@@ -111,6 +117,11 @@ Timer_Manager.prototype.update_timer = function(s_i){
 
 (() => {
 
+    const pluginName = 'IRA_BattleProcess';
+    const parameters = PluginManager.parameters(pluginName);
+    //alert(JSON.stringify(parameters));
+    const use_atk_access = Boolean(parameters['use_atk_access']);
+    //alert(use_atk_access)
     function IraDebugWindow(){
         this.guid = GuidManager.NewGuid();
         this.initialize(...arguments);
@@ -179,12 +190,6 @@ Timer_Manager.prototype.update_timer = function(s_i){
         return repeatedTargets;
     };
 
-    const start_action = BattleManager.startAction;
-    BattleManager.startAction = function() {
-        start_action.apply(this, arguments);
-        this._base_target_num = this._targets.length / this._action.numRepeats();
-    };
-
     BattleManager.updateAction = function() {
         if (this._targets && this._base_target_num) {
             for(let i = 0; i < this._base_target_num; i++){
@@ -206,12 +211,66 @@ Timer_Manager.prototype.update_timer = function(s_i){
     }
 
     Window_BattleLog.prototype.update = function() {
-        this.updateWait();
-        this.callNextMethod();
+        if (!this.updateWait()) {
+            this.callNextMethod();
+            this.callNextMethod();
+            this.callNextMethod();
+            this.callNextMethod();
+            this.callNextMethod();
+        }
     };
+    
 
     Window_BattleLog.prototype.maxLines = function() {
         return 20;
     };
+
+    Sprite_Actor.prototype.setActorHome = function(index) {
+        const x = Graphics.width * 0.98 - $gameParty.members().length * 32;
+        this.setHome(x + index * 32, 220 + index * 68);
+    };
+
+    if (use_atk_access){
+        Sprite_Actor.prototype.stepForward = function() {
+            const action_target_pos = BattleManager.ActionTargetPos();
+            if(this._actor.isActing() && action_target_pos && action_target_pos.length > 1){
+                const x = action_target_pos[0] - 16;
+                const y = action_target_pos[1];
+                const move_dist_x = x - this._homeX;
+                const move_dist_y = y - this._homeY;
+                this.startMove(move_dist_x, move_dist_y, 12);
+            }else{
+                this.startMove(-48, 0, 12);
+            }
+        };
+    
+        BattleManager.ActionTargetPos = function(){
+            return this.action_target_pos;
+        }
+        
+        BattleManager.startAction = function() {
+            const subject = this._subject;
+            const action = subject.currentAction();
+            const targets = action.makeTargets();
+            this._phase = "action";
+            this._action = action;
+            this._targets = targets;
+            if(this._targets && this._targets.length > 0 && subject.isActor() && targets[0].isEnemy()){
+                this.action_target_pos = [targets[0].screenX(), targets[0].screenY()];
+            }else{
+                this.action_target_pos = null;
+            }
+            subject.cancelMotionRefresh();
+            subject.useItem(action.item());
+            this._action.applyGlobal();
+            this._logWindow.startAction(subject, action, targets);
+        };
+    
+        const start_action = BattleManager.startAction;
+        BattleManager.startAction = function() {
+            start_action.apply(this, arguments);
+            this._base_target_num = this._targets.length / this._action.numRepeats();
+        };   
+    }
 
 })();

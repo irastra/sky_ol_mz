@@ -99,41 +99,42 @@ IRA_ITEM_TYPE.ARMOR = 2;
 
     Game_Party.prototype.gainItem = function(item, amount, includeEquip, is_recycle) {
         const container = this.itemContainer(item);
-        if (container) {
-            if (amount > 0){
-                let new_item = item;
-                if (!is_recycle){
-                    new_item = IraItem.NewIraItem(item);
-                }       
-                const item_guid = new_item.guid;
-                if(!container[item_guid]){
-                    container[item_guid] = [];
-                }
-                container[item_guid].push(new_item);     
-                this.cur_test_item = new_item;           
-            }else if(amount < 0){
-                let item_guid = item.guid;
-                if (container[item_guid]) {
-                    let item_list = container[item_guid];
-                    //alert(item_list.length + " " + item_list.includes(item));
-                    if(item_list.includes(item)){
-                        const find_idx = item_list.indexOf(item);
-                        item_list.splice(find_idx, 1);
-                    }else{
-                        item_list.shift();
+        for(let idx = 0; idx < Math.abs(amount); idx++){
+            if (container) {
+                if (amount > 0){
+                    let new_item = item;
+                    if (!is_recycle){
+                        new_item = IraItem.NewIraItem(item);
+                    }       
+                    const item_guid = new_item.guid;
+                    if(!container[item_guid]){
+                        container[item_guid] = [];
                     }
-                    if(container[item_guid].length == 0){
-                        delete container[item_guid];
+                    container[item_guid].push(new_item);              
+                }else if(amount < 0){
+                    const lastNumber = this.numItems(item);
+                    let item_guid = item.guid;
+                    if (container[item_guid]) {
+                        let item_list = container[item_guid];
+                        //alert(item_list.length + " " + item_list.includes(item));
+                        if(item_list.includes(item)){
+                            const find_idx = item_list.indexOf(item);
+                            item_list.splice(find_idx, 1);
+                        }else{
+                            item_list.shift();
+                        }
+                        if(container[item_guid].length == 0){
+                            delete container[item_guid];
+                        }
                     }
-                }
-                const lastNumber = this.numItems(item);
-                const newNumber = lastNumber + amount;
-                if (includeEquip && newNumber < 0) {
-                    this.discardMembersEquip(item, -newNumber);
+                    const newNumber = lastNumber + amount / Math.abs(amount);
+                    if (includeEquip && newNumber < 0) {
+                        this.discardMembersEquip(item, -newNumber);
+                    }
                 }
             }
-            $gameMap.requestRefresh();
         }
+        $gameMap.requestRefresh();
     };
 
     Game_Item.prototype.initialize = function(item) {
