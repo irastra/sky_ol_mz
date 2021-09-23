@@ -11,8 +11,8 @@
  * 
  * @param use_atk_access
  * @desc 攻击前像目标移动。
- * @type boolean
- * @default false
+ * @type number
+ * @default 0
  */
 
 function EventManager(){
@@ -119,9 +119,7 @@ Timer_Manager.prototype.update_timer = function(s_i){
 
     const pluginName = 'IRA_BattleProcess';
     const parameters = PluginManager.parameters(pluginName);
-    //alert(JSON.stringify(parameters));
-    const use_atk_access = Boolean(parameters['use_atk_access']);
-    //alert(use_atk_access)
+    const use_atk_access = Number(parameters['use_atk_access']);
     function IraDebugWindow(){
         this.guid = GuidManager.NewGuid();
         this.initialize(...arguments);
@@ -207,19 +205,8 @@ Timer_Manager.prototype.update_timer = function(s_i){
     };
 
     Window_BattleLog.prototype.messageSpeed = function(){
-        return 16;
-    }
-
-    Window_BattleLog.prototype.update = function() {
-        if (!this.updateWait()) {
-            this.callNextMethod();
-            this.callNextMethod();
-            this.callNextMethod();
-            this.callNextMethod();
-            this.callNextMethod();
-        }
-    };
-    
+        return 10;
+    }    
 
     Window_BattleLog.prototype.maxLines = function() {
         return 20;
@@ -229,7 +216,6 @@ Timer_Manager.prototype.update_timer = function(s_i){
         const x = Graphics.width * 0.98 - $gameParty.members().length * 32;
         this.setHome(x + index * 32, 220 + index * 68);
     };
-
     if (use_atk_access){
         Sprite_Actor.prototype.stepForward = function() {
             const action_target_pos = BattleManager.ActionTargetPos();
@@ -265,12 +251,12 @@ Timer_Manager.prototype.update_timer = function(s_i){
             this._action.applyGlobal();
             this._logWindow.startAction(subject, action, targets);
         };
-    
-        const start_action = BattleManager.startAction;
-        BattleManager.startAction = function() {
-            start_action.apply(this, arguments);
-            this._base_target_num = this._targets.length / this._action.numRepeats();
-        };   
     }
+
+    const start_action = BattleManager.startAction;
+    BattleManager.startAction = function() {
+        start_action.apply(this, arguments);
+        this._base_target_num = this._targets.length / this._action.numRepeats();
+    };   
 
 })();
