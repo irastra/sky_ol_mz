@@ -4,7 +4,7 @@
 
 /*:
  * @target MZ
- * @plugindesc 战斗伤害即时触发
+ * @plugindesc 战斗调整
  * @author irastra
  *
  * @help 战斗调整。
@@ -13,6 +13,11 @@
  * @desc 攻击前像目标移动。
  * @type number
  * @default 0
+ * 
+ * @param action_access_note
+ * @desc 远程攻击备注
+ * @type string
+ * @default 远程
  */
 
 function EventManager(){
@@ -120,6 +125,7 @@ Timer_Manager.prototype.update_timer = function(s_i){
     const pluginName = 'IRA_BattleProcess';
     const parameters = PluginManager.parameters(pluginName);
     const use_atk_access = Number(parameters['use_atk_access']);
+    const action_access_note = String(parameters['action_access_note'])
     function IraDebugWindow(){
         this.guid = GuidManager.NewGuid();
         this.initialize(...arguments);
@@ -216,6 +222,7 @@ Timer_Manager.prototype.update_timer = function(s_i){
         const x = Graphics.width * 0.98 - $gameParty.members().length * 32;
         this.setHome(x + index * 32, 220 + index * 68);
     };
+    
     if (use_atk_access){
         Sprite_Actor.prototype.stepForward = function() {
             const action_target_pos = BattleManager.ActionTargetPos();
@@ -241,7 +248,8 @@ Timer_Manager.prototype.update_timer = function(s_i){
             this._phase = "action";
             this._action = action;
             this._targets = targets;
-            if(this._targets && this._targets.length > 0 && subject.isActor() && targets[0].isEnemy()){
+            const item = action.item();
+            if(item && item.note == action_access_note && this._targets && this._targets.length > 0 && subject.isActor() && targets[0].isEnemy()){
                 this.action_target_pos = [targets[0].screenX(), targets[0].screenY()];
             }else{
                 this.action_target_pos = null;
