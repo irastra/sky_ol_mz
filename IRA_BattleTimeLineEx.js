@@ -92,7 +92,8 @@
         };
 
         const members = $gameParty.members();
-        for (const actor of members){
+        for (let idx =0; idx < $gameParty.maxBattleMembers(); idx++){
+            const actor  = members[idx]; 
             let tmp_array = [];
             for (let i = 0; i < this._time_wheel; i++){
                 let battler_sprite = new Sprite();
@@ -211,13 +212,32 @@
         }
     }
 
-    Sprite_BattleTimelineEx.prototype.cmp = function(a, b){
-        if (a.position.x != b.position.x){
-            return a.position.x - b.position.x;
+    Sprite_BattleTimelineEx.prototype.cmp = function(aa, bb){
+        a = aa._battler;
+        b = bb._battler;
+        if(aa.position.x == bb.position.x){
+            if((a._passTag && b._passTag)){
+                if(a.isActor() && b.isActor()){
+                    return idx_b.actorId() - idx_a.actorId();
+                }else if(a.isEnemy() && b.isEnemy()){
+                    return idx_b.enemyId() - idx_a.enemyId();
+                }else{
+                    if (a.isActor()){
+                        return 1;
+                    }else{
+                        return -1;
+                    }
+                }
+            }else if(a._passTag && !b._passTag){
+                return 1;
+            }else if(!a._passTag && b._passTag){
+                return -1;
+            }else{
+                return 0;
+            }
+        }else{
+            return aa.position.x - bb.position.x;
         }
-        a = a._battler;
-        b = b._battler;
-        return a.tpbChargeTime() - b.tpbChargeTime();
     }
 
     Sprite_BattleTimelineEx.prototype.updateMembers = function(){
