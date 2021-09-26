@@ -222,12 +222,12 @@ Timer_Manager.prototype.update_timer = function(s_i){
         const x = Graphics.width * 0.98 - $gameParty.members().length * 32;
         this.setHome(x + index * 32, 220 + index * 68);
     };
-    
+
     if (use_atk_access){
         Sprite_Actor.prototype.stepForward = function() {
             const action_target_pos = BattleManager.ActionTargetPos();
             if(this._actor.isActing() && action_target_pos && action_target_pos.length > 1){
-                const x = action_target_pos[0] - 16;
+                const x = action_target_pos[0] + 32;
                 const y = action_target_pos[1];
                 const move_dist_x = x - this._homeX;
                 const move_dist_y = y - this._homeY;

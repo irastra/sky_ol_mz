@@ -141,7 +141,9 @@
                     player_pos_x = x;
                     player_pos_y = y;
                 }
-                this._draw_sprite.bitmap.fillRect(pos.x, pos.y, sprite_title_width / this._size_x_scale, sprite_title_height / this._size_y_scale, color);
+                const c_width = sprite_title_width / this._size_x_scale;
+                const c_height = sprite_title_height / this._size_y_scale
+                this._draw_sprite.bitmap.fillRect(pos.x - c_width/2.0, pos.y - c_height/2.0, c_width, c_height, color);
             }
         }
         this.DrawInfo(player_pos_x, player_pos_y);

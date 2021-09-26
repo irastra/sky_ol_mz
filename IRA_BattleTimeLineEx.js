@@ -17,6 +17,34 @@
         EventManager.PublishEvent("actor_init_tbp_charge_time", this);
     }
 
+    function Sprite_BattleHead() {
+        this.initialize(...arguments);
+    }
+
+    Sprite_BattleHead.prototype = Object.create(Sprite.prototype);
+    Sprite_BattleHead.prototype.constructor = Sprite_BattleHead;
+
+    Sprite_BattleHead.prototype.initialize = function(battler) {
+        Sprite.prototype.initialize.call(this);
+        this._battler = battler;
+        this._selectionEffectCount = 0;
+    }
+
+    Sprite_BattleHead.prototype.updateSelectionEffect = function(sprite) {
+        const target = this;
+        if (this._battler.isSelected()) {
+            this._selectionEffectCount++;
+            if (this._selectionEffectCount % 30 < 15) {
+                target.setBlendColor([255, 255, 255, 64]);
+            } else {
+                target.setBlendColor([0, 0, 0, 0]);
+            }
+        } else if (this._selectionEffectCount > 0) {
+            this._selectionEffectCount = 0;
+            target.setBlendColor([0, 0, 0, 0]);
+        }
+    };
+
     //-----------------------------------------------------------------------------
     // Sprite_BattleTimelineEx
     //
@@ -77,9 +105,8 @@
         for (const enemy of enemies){
             let tmp_array = [];
             for (let i = 0;  i < this._time_wheel; i++){
-                let battler_sprite = new Sprite();
+                let battler_sprite = new Sprite_BattleHead(enemy);
                 battler_sprite.anchor.x = 0.5;
-                battler_sprite._battler = enemy;
                 const name = enemy.battlerName();
                 this.loadBitmap(battler_sprite, name);
                 this.addChild(battler_sprite);
@@ -96,8 +123,7 @@
             const actor  = members[idx]; 
             let tmp_array = [];
             for (let i = 0; i < this._time_wheel; i++){
-                let battler_sprite = new Sprite();
-                battler_sprite._battler = actor;
+                let battler_sprite = new Sprite_BattleHead(actor);
                 battler_sprite.anchor.x = 0.5;
                 battler_sprite.bitmap = ImageManager.loadFace(actor.faceName());
                 let faceIndex = actor.faceIndex(); 
@@ -134,6 +160,7 @@
             if (!sprite.visible){
                 continue;
             }
+            sprite.updateSelectionEffect();
             if(check_sp && sprite.is_sp){
                 check_sp = false;
                 continue;
