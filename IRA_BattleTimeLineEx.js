@@ -243,6 +243,9 @@
         a = aa._battler;
         b = bb._battler;
         if(aa.position.x == bb.position.x){
+            if (a.tpbRelativeSpeed() != b.tpbRelativeSpeed()){
+                return a.tpbRelativeSpeed() - b.tpbRelativeSpeed();
+            }
             if((a._passTag && b._passTag)){
                 if(a.isActor() && b.isActor()){
                     return idx_b.actorId() - idx_a.actorId();
